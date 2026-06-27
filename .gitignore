@@ -1,69 +1,108 @@
-# Prerequisites
-*.d
+# ==========================
+# C++ Build Files
+# ==========================
 
-# Compiled Object files
-*.slo
-*.lo
 *.o
 *.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Linker files
-*.ilk
-
-# Debugger Files
-*.pdb
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-*.so.*
-
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
 *.exe
 *.out
-*.app
+*.dll
+*.so
+*.dylib
 
-# Build directories
 build/
-Build/
-build-*/
+bin/
+Debug/
+Release/
 
-# CMake generated files
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
 Makefile
-install_manifest.txt
-compile_commands.json
 
-# Temporary files
-*.tmp
+# ==========================
+# Visual Studio
+# ==========================
+
+.vs/
+*.vcxproj.user
+*.suo
+
+# ==========================
+# VS Code
+# ==========================
+
+.vscode/
+
+# ==========================
+# Python
+# ==========================
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environments
+venv/
+env/
+.venv/
+
+# ==========================
+# Jupyter Notebooks
+# ==========================
+
+.ipynb_checkpoints/
+
+# ==========================
+# Streamlit
+# ==========================
+
+.streamlit/secrets.toml
+
+# ==========================
+# Database Files
+# ==========================
+
+*.db
+*.sqlite
+*.sqlite3
+
+# ==========================
+# Generated Simulation Data
+# ==========================
+
+data/generated/
+data/simulations/
+data/results/
+
+# CSV Results
+battle_results.csv
+simulation_results.csv
+
+# ==========================
+# Logs
+# ==========================
+
 *.log
+
+# ==========================
+# OS Files
+# ==========================
+
+.DS_Store
+Thumbs.db
+
+# ==========================
+# Temporary Files
+# ==========================
+
+*.tmp
 *.bak
-*.swp
 
-# vcpkg
-vcpkg_installed/
+# ==========================
+# Environment Variables
+# ==========================
 
-# debug information files
-*.dwo
-
-# test output & cache
-Testing/
-.cache/
+.env
+.env.local
