@@ -3,11 +3,17 @@
 
 #include "character.h"
 
-// Function to conduct a battle between two characters
-void battle(Character& character1,
-            Character& character2);
+enum class BattleResult
+{
+    Player1Win,
+    Player2Win,
+    Draw
+};
 
-// Function to print the status of a character
-void printStatus(const Character& character);
+BattleResult battle(
+    Character& player1,
+    Character& player2,
+    bool showLog = true
+);
 
-#endif // BATTLE_H
+#endif

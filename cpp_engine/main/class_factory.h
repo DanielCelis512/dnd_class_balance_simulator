@@ -17,4 +17,6 @@ Character createSorcerer();
 Character createWarlock();
 Character createWizard();
 
+Character createCharacter(ClassType classType);
+
 #endif

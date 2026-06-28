@@ -188,8 +188,6 @@ struct Character
     int healingDiceSides;
     int healingModifier;
 
-    bool healSelfOnly;
-
     // =====================================================
     // Special Abilities
     // =====================================================
@@ -220,7 +218,7 @@ struct Character
     // Bard
     // =====================================================
 
-    bool bardicInspirationActive;
+    bool cuttingWordsActive;
 
     // =====================================================
     // Fighter
@@ -268,6 +266,7 @@ struct Character
     int originalDamageDiceNumber;
     int originalDamageDiceSides;
     int originalDamageModifier;
+    bool originalHasAdvantage;
 
     // =====================================================
     // Spellcaster Flags
@@ -286,16 +285,9 @@ struct Character
     int curseRounds;
     int wildShapeRounds;
     int rageRounds;
-    int bardicInspirationRounds;
+    int cuttingWordsRounds;
     int sneakAttackRounds;
     int empoweredSpellRounds;
-
-    // =====================================================
-    // Simulation Statistics
-    // =====================================================
-
-    int wins;
-    int losses;
 };
 
 #endif

@@ -28,6 +28,17 @@ bool cantripAttack(
     Character& target
 );
 
+// Fuction to get the modifier for Saving Throws
+int getSaveModifier(
+    Character& target,
+    SaveType type
+);
+
+// Function to update the Status Effects
+void updateStatusEffects(
+    Character& character
+);
+
 // Cantrip attacks vs saving throw
 bool cantripSavingThrow(
     Character& caster,
@@ -53,6 +64,7 @@ void applyDamage(
     int damage
 );
 
+// Function Restore Health
 void restoreHealth(
     Character& target,
     int amount

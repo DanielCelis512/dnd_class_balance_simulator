@@ -73,15 +73,12 @@ Character createBarbarian()
     barbarian.canHeal = false;
     barbarian.canUseCantrips = false;
 
-    barbarian.wins = 0;
-    barbarian.losses = 0;
-    
     barbarian.alive = true;
 
     return barbarian;
 }
 
-// Function to create a Wizard character
+// Function to create a Bard character
 Character createBard()
 {
     Character bard{};
@@ -123,7 +120,7 @@ Character createBard()
 
     bard.magicDiceNumber = 3;
     bard.magicDiceSides = 6;
-    bard.magicModifier = 0;
+    bard.magicModifier = 3;
 
     bard.cantripDiceNumber = 1;
     bard.cantripDiceSides = 6;
@@ -139,8 +136,8 @@ Character createBard()
     bard.specialUses = 3;
     bard.maxSpecialUses = 3;
 
-    bard.bardicInspirationActive = false;
-    bard.bardicInspirationRounds = 0;
+    bard.cuttingWordsActive = false;
+    bard.cuttingWordsRounds = 0;
 
     bard.isCaster = true;
     bard.canHeal = true;
@@ -167,9 +164,6 @@ Character createBard()
 
     bard.bonusAc = 0;
     bard.bonusAcRounds = 0;
-
-    bard.wins = 0;
-    bard.losses = 0;
 
     bard.alive = true;
 
@@ -257,9 +251,6 @@ Character createCleric()
     cleric.bonusAc = 0;
     cleric.bonusAcRounds = 0;
 
-    cleric.wins = 0;
-    cleric.losses = 0;
-
     cleric.alive = true;
 
     return cleric;
@@ -297,8 +288,6 @@ Character createDruid()
     
     druid.magicType = MagicType::SavingThrow;
     druid.spellSaveType = SaveType::Strength;
-    druid.magicType = MagicType::AttackRoll;
-    druid.spellSaveType = SaveType::Dexterity;
 
     druid.cantripType = MagicType::AttackRoll;
 
@@ -349,11 +338,15 @@ Character createDruid()
     druid.wildShapeActive = false;
     druid.wildShapeForm = WildShapeForm::None;
 
+    druid.originalAc = druid.ac;
+    druid.originalAttackBonus = druid.attackBonus;
+    druid.originalDamageDiceNumber = druid.damageDiceNumber;
+    druid.originalDamageDiceSides = druid.damageDiceSides;
+    druid.originalDamageModifier = druid.damageModifier;
+    druid.originalHasAdvantage = druid.hasAdvantage;
+
     druid.bonusAc = 0;
     druid.bonusAcRounds = 0;
-
-    druid.wins = 0;
-    druid.losses = 0;
 
     druid.alive = true;
 
@@ -384,7 +377,7 @@ Character createFighter()
     fighter.hp = 36;
     fighter.maxHp = 36;
 
-    fighter.ac = 18;
+    fighter.ac = 16;
 
     fighter.attackBonus = 5;
 
@@ -396,9 +389,6 @@ Character createFighter()
     fighter.maxSpecialUses = 2;
 
     fighter.actionSurgeActive = false;
-
-    fighter.healingUses = 2;
-    fighter.maxHealingUses = 2;
 
     fighter.alive = true;
     fighter.shieldEquipped = true;
@@ -423,11 +413,8 @@ Character createFighter()
     fighter.wildShapeForm = WildShapeForm::None;
 
     fighter.isCaster = false;
-    fighter.canHeal = true;
+    fighter.canHeal = false;
     fighter.canUseCantrips = false;
-
-    fighter.wins = 0;
-    fighter.losses = 0;
 
     return fighter;
 }
@@ -490,9 +477,6 @@ Character createMonk()
 
     monk.isCaster = false;
 
-    monk.wins = 0;
-    monk.losses = 0;
-
     monk.alive = true;
 
     return monk;
@@ -547,7 +531,7 @@ Character createPaladin()
     paladin.specialUses = 1;
     paladin.maxSpecialUses = 1;
 
-    paladin.canHeal = true;
+    paladin.canHeal = false;
 
     paladin.shieldEquipped = true;
 
@@ -572,9 +556,6 @@ Character createPaladin()
 
     paladin.bonusAc = 0;
     paladin.bonusAcRounds = 0;
-
-    paladin.wins = 0;
-    paladin.losses = 0; 
 
     paladin.alive = true;
 
@@ -655,9 +636,6 @@ Character createRanger()
 
     ranger.wildShapeForm = WildShapeForm::None;
 
-    ranger.wins = 0;
-    ranger.losses = 0;
-
     ranger.alive = true;
 
     return ranger;
@@ -714,15 +692,12 @@ Character createRogue()
     rogue.raging = false;
     rogue.favoredEnemy = false;
 
-    rogue.sneakAttackReady = true;
+    rogue.sneakAttackReady = false;
     rogue.sneakAttackRounds = 0;
 
     rogue.cursed = false;
 
     rogue.wildShapeForm = WildShapeForm::None;
-
-    rogue.wins = 0;
-    rogue.losses = 0;
 
     rogue.alive = true;
 
@@ -758,8 +733,6 @@ Character createSorcerer()
     sorcerer.spellDc = 14;
 
     sorcerer.magicType = MagicType::AttackRoll;
-    sorcerer.magicType = MagicType::SavingThrow;
-    sorcerer.spellSaveType = SaveType::Dexterity;
 
     sorcerer.cantripType = MagicType::AttackRoll;
 
@@ -779,8 +752,6 @@ Character createSorcerer()
 
     sorcerer.empoweredSpellRounds = 0;
 
-    sorcerer.hasAdvantage = true;
-
     sorcerer.isCaster = true;
     sorcerer.canUseCantrips = true;
 
@@ -791,7 +762,7 @@ Character createSorcerer()
 
     sorcerer.extraAttacks = 0;
 
-    sorcerer.hasAdvantage = true;
+    sorcerer.hasAdvantage = false;
     sorcerer.hasDisadvantage = false;
 
     sorcerer.raging = false;
@@ -802,9 +773,6 @@ Character createSorcerer()
     sorcerer.cursed = false;
 
     sorcerer.wildShapeForm = WildShapeForm::None;
-
-    sorcerer.wins = 0;
-    sorcerer.losses = 0;
 
     sorcerer.alive = true;
 
@@ -882,9 +850,6 @@ Character createWarlock()
 
     warlock.wildShapeForm = WildShapeForm::None;
 
-    warlock.wins = 0;
-    warlock.losses = 0;
-
     warlock.alive = true;
 
     return warlock;
@@ -919,7 +884,6 @@ Character createWizard()
     wizard.spellDc = 14;
     
     wizard.magicType = MagicType::SavingThrow;
-    wizard.magicType = MagicType::AttackRoll;
     wizard.spellSaveType = SaveType::Charisma;
 
     wizard.cantripType = MagicType::AttackRoll;
@@ -963,10 +927,52 @@ Character createWizard()
     wizard.bonusAc = 0;
     wizard.bonusAcRounds = 0;
 
-    wizard.wins = 0;
-    wizard.losses = 0;
-
     wizard.alive = true;
 
     return wizard;
+}
+
+Character createCharacter(ClassType classType)
+{
+    switch(classType)
+    {
+        case ClassType::Barbarian:
+            return createBarbarian();
+
+        case ClassType::Bard:
+            return createBard();
+
+        case ClassType::Cleric:
+            return createCleric();
+
+        case ClassType::Druid:
+            return createDruid();
+
+        case ClassType::Fighter:
+            return createFighter();
+
+        case ClassType::Monk:
+            return createMonk();
+
+        case ClassType::Paladin:
+            return createPaladin();
+
+        case ClassType::Ranger:
+            return createRanger();
+
+        case ClassType::Rogue:
+            return createRogue();
+
+        case ClassType::Sorcerer:
+            return createSorcerer();
+
+        case ClassType::Warlock:
+            return createWarlock();
+
+        case ClassType::Wizard:
+            return createWizard();
+
+        default:
+            return createBarbarian();
+    }
 }

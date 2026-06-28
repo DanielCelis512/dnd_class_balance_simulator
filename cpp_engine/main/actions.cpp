@@ -1,7 +1,7 @@
 #include "actions.h"
 #include "dice.h"
+#include "logger.h"
 
-#include <iostream>
 #include <algorithm>
 
 // Rolls a d20 for the given character, taking into account advantage and disadvantage
@@ -12,6 +12,7 @@ int rollD20(
     int roll1 =
         rollDice(1,20);
 
+    // Defines Advantage
     if(character.hasAdvantage)
     {
         int roll2 =
@@ -23,6 +24,7 @@ int rollD20(
         );
     }
 
+    // Defines Disadvantage
     if(character.hasDisadvantage)
     {
         int roll2 =
@@ -57,27 +59,112 @@ void applyDamage(
         }
     }
 
-    if(damage > 0)
-    {
-        target.hp -= damage;
-    }
-
     // Handle damage reduction due to Rage
     if(target.raging)
     {
         damage /= 2;
 
-        std::cout
-            << target.name
-            << " reduces "
-            << damage
-            << " damage due to Rage.\n";
+        combatLog(target.name);
+        combatLog("'s Rage reduces the damage to ");
+        combatLog(damage);
+        combatLog(".\n");
+    }
+
+
+    if(damage > 0)
+    {
+        target.hp -= damage;
     }
 
     if(target.hp <= 0)
     {
         target.hp = 0;
         target.alive = false;
+    }
+}
+
+// Retrieves the saving throw modifier for a character based on the specified save type
+int getSaveModifier(
+    Character& target,
+    SaveType type
+)
+{
+    switch(type)
+    {
+        case SaveType::Strength:
+            return target.strSave;
+        case SaveType::Dexterity:
+            return target.dexSave;
+        case SaveType::Constitution:
+            return target.conSave;
+        case SaveType::Intelligence:
+            return target.intSave;
+        case SaveType::Wisdom:
+            return target.wisSave;
+        case SaveType::Charisma:
+            return target.chaSave;
+        default:
+            return 0;
+    }
+}
+
+// Updates the status effects of a character, decrementing the duration of each effect and disabling it when its duration reaches zero
+void updateStatusEffects(Character& character)
+{
+    if(character.raging && --character.rageRounds <= 0)
+    {
+        character.raging = false;
+    }
+
+    if(character.cuttingWordsActive &&
+       --character.cuttingWordsRounds <= 0)
+    {
+        character.cuttingWordsActive = false;
+    }
+
+    if(character.favoredEnemy &&
+       --character.favoredEnemyRounds <= 0)
+    {
+        character.favoredEnemy = false;
+    }
+
+    if(character.sneakAttackReady &&
+       --character.sneakAttackRounds <= 0)
+    {
+        character.sneakAttackReady = false;
+        character.hasAdvantage = false;
+    }
+
+    if(character.cursed &&
+       --character.curseRounds <= 0)
+    {
+        character.cursed = false;
+    }
+
+    if(character.empoweredSpellRounds > 0 &&
+       --character.empoweredSpellRounds <= 0)
+    {
+        character.bonusDamage = 0;
+    }
+
+    if(character.wildShapeActive &&
+       --character.wildShapeRounds <= 0)
+    {
+        character.wildShapeActive = false;
+
+        character.ac = character.originalAc;
+        character.attackBonus = character.originalAttackBonus;
+        character.damageDiceNumber = character.originalDamageDiceNumber;
+        character.damageDiceSides = character.originalDamageDiceSides;
+        character.damageModifier = character.originalDamageModifier;
+        character.hasAdvantage = character.originalHasAdvantage;
+
+        character.tempHp = 0;
+
+        character.wildShapeForm = WildShapeForm::None;
+
+        combatLog(character.name);
+        combatLog(" reverts from Wild Shape to their original form.\n");
     }
 }
 
@@ -137,42 +224,43 @@ bool attack(Character& attacker,
         attacker.attackBonus;
 
     // Display the attack roll and the defender's AC
-    std::cout
-        << attacker.name
-        << " rolls "
-        << attackRoll
-        << " vs AC "
-        << defender.ac
-        << "\n";
+    combatLog(attacker.name);
+    combatLog(" rolls "); 
+    combatLog(attackRoll);
+    combatLog(" vs AC ");
+    combatLog(defender.ac);
+    combatLog("\n");
 
-    // Check for Bardic Inspiration on the defender, which can reduce the attack roll by 1d6
-    if(attacker.bardicInspirationActive == false &&
-    defender.bardicInspirationActive)
+    // Check for Cutting Words on the defender, which can reduce the attack roll by 1d6
+    if(attacker.cuttingWordsActive == false &&
+    defender.cuttingWordsActive)
     {
-        std::cout
-            << defender.name
-            << " has Bardic Inspiration active, reducing the attack roll by 1d6.\n";
+        combatLog(defender.name); 
+        combatLog(" has Cutting Words active, reducing the attack roll by 1d6.\n");
+
         attackRoll -= rollDice(1,6);
     }
+
+    // Store the original AC of the defender to restore it later
+    int defenderAc =
+    defender.ac;
 
     // If the defender has a shield equipped, increase their AC by 2 for this attack
     if(defender.shieldEquipped)
     {
-        std::cout
-            << defender.name
-            << " has a shield equipped, increasing AC by 2.\n";
+        combatLog(defender.name);
+        combatLog(" has a shield equipped, increasing AC by 2.\n");
 
-        defender.ac += 2;
+        defenderAc += 2;
     }
 
     // Critical Miss
     if(d20 == 1)
     {
-        std::cout
-            << attacker.name
-            << " critically misses "
-            << defender.name
-            << ".\n";
+        combatLog(attacker.name);
+        combatLog(" critically misses ");
+        combatLog(defender.name);
+        combatLog(".\n");
 
         return false;
     }
@@ -183,11 +271,10 @@ bool attack(Character& attacker,
 
     if(critical)
     {
-        std::cout
-            << attacker.name
-            << " critically hits "
-            << defender.name
-            << "!\n";
+        combatLog(attacker.name);
+        combatLog(" critically Hits ");
+        combatLog(defender.name);
+        combatLog(".\n");
     }
 
     // Critical Hit
@@ -222,32 +309,32 @@ bool attack(Character& attacker,
 
     if(attacker.sneakAttackReady)
         {
-            damage += rollDice(1,6);
+            damage += 2*(rollDice(1,6));
+            attacker.sneakAttackReady = false;
+            attacker.hasAdvantage = false;
         }
 
     applyDamage(defender, damage);
 
     if(!defender.alive)
     {
-        std::cout
-            << defender.name
-            << " has been defeated!\n";
+        combatLog(defender.name);
+        combatLog(" has been defeated!\n");
     }
 
-    std::cout
-        << attacker.name
-        << " critically hits "
-        << defender.name
-        << " for "
-        << damage
-        << " damage.\n";
+    combatLog(attacker.name);
+    combatLog(" critically hits ");
+    combatLog(defender.name);
+    combatLog(" for ");
+    combatLog(damage);
+    combatLog(" damage.\n");
 
     return true;
 
 }
 
     // Normal Hit
-    if(attackRoll > defender.ac)
+    if(attackRoll >= defenderAc)
     {
     int damage =
         rollDice(
@@ -270,31 +357,42 @@ bool attack(Character& attacker,
             );
     }
 
+    if(attacker.favoredEnemy)
+    {
+    damage += rollDice(1,6);
+    }
+
+    if(attacker.sneakAttackReady)
+    {
+    damage += rollDice(1,6);
+
+    attacker.sneakAttackReady = false;
+    attacker.hasAdvantage = false;
+    attacker.sneakAttackRounds = 0;
+    }
+
     applyDamage(defender, damage);
 
     if(!defender.alive)
     {
-        std::cout
-            << defender.name
-            << " has been defeated!\n";
+        combatLog(defender.name);
+        combatLog(" has been defeated!\n");
     }
 
-    std::cout
-        << attacker.name
-        << " hits "
-        << defender.name
-        << " for "
-        << damage
-        << " damage.\n";
+    combatLog(attacker.name);
+    combatLog(" hits ");
+    combatLog(defender.name);
+    combatLog(" for ");
+    combatLog(damage);
+    combatLog(" damage.\n");
 
     return true;
 }
 
-    std::cout
-        << attacker.name
-        << " misses "
-        << defender.name
-        << ".\n";
+    combatLog(attacker.name);
+    combatLog(" misses ");
+    combatLog(defender.name);
+    combatLog(".\n");
 
     return false;
 }
@@ -305,14 +403,17 @@ bool magicAttack(
     Character& target
 )
 {
+    // Store the original AC of the target to restore it later
+    int targetAc =
+    target.ac;
+
     // If the target has a shield equipped, increase their AC by 2 for this attack
     if(target.shieldEquipped)
     {
-        std::cout
-            << target.name
-            << " has a shield equipped, increasing AC by 2.\n";
+        combatLog(target.name);
+        combatLog(" has a shield equipped, increasing AC by 2.\n");
 
-        target.ac += 2;
+        targetAc += 2;
     }
 
     // Check if the caster has any magic uses left
@@ -330,27 +431,26 @@ bool magicAttack(
         d20 +
         caster.magicModifier;
 
-    std::cout
-        << caster.name
-        << " casts a spell. Roll "
-        << attackRoll
-        << " vs AC "
-        << target.ac
-        << "\n";
-
-    if(caster.bardicInspirationActive == false &&
-    target.bardicInspirationActive)
+    // Check for Cutting Words on the defender, which can reduce the attack roll by 1d6
+    if(caster.cuttingWordsActive == false &&
+    target.cuttingWordsActive)
     {
-        std::cout
-            << target.name
-            << " has Bardic Inspiration active, reducing the attack roll by 1d6.\n";
+        combatLog(target.name); 
+        combatLog(" has Cutting Words active, reducing the attack roll by 1d6.\n");
+
         attackRoll -= rollDice(1,6);
     }
+    
+    combatLog(caster.name);
+    combatLog(" casts a spell. Roll ");
+    combatLog(attackRoll);
+    combatLog(" vs AC ");
+    combatLog(targetAc);
+    combatLog("\n");
 
     if(d20 == 1)
     {
-        std::cout
-            << "Critical miss!\n";
+        combatLog("Critical miss!\n");
 
         return false;
     }
@@ -360,13 +460,12 @@ bool magicAttack(
 
     if(critical)
     {
-        std::cout
-            << caster.name
-            << " critically hits with magic!\n";
+        combatLog(caster.name);
+        combatLog(" critically hits with magic!\n");
     }
 
     if(critical ||
-       attackRoll >= target.ac)
+       attackRoll >= targetAc)
     {
         int dice =
             caster.magicDiceNumber;
@@ -383,34 +482,34 @@ bool magicAttack(
             )
             + caster.magicModifier;
 
-        applyDamage(
-            target,
-            damage
-        );
-
-        std::cout
-            << target.name
-            << " takes "
-            << damage
-            << " magic damage.\n";
-
-        return true;
-
         if(caster.favoredEnemy)
         {
             damage +=
                 rollDice(1,6);
         }
 
-        if(caster.cursed)
+        if(target.cursed)
         {
             damage += rollDice(1,6);
         }
+
+        damage += caster.bonusDamage;
+
+        applyDamage(
+            target,
+            damage
+        );
+
+        combatLog(target.name);
+        combatLog(" takes ");
+        combatLog(damage);
+        combatLog(" magic damage.\n");
+
+        return true;
     }
 
-    std::cout
-        << caster.name
-        << " misses.\n";
+    combatLog(caster.name);
+    combatLog(" misses.\n");
 
     return false;
 }
@@ -435,6 +534,7 @@ bool savingThrowAttack(
             caster.spellDc
         );
 
+
     int damage =
         rollDice(
             caster.magicDiceNumber,
@@ -446,9 +546,8 @@ bool savingThrowAttack(
     {
         case SaveResult::CriticalSuccess:
         {
-            std::cout
-                << target.name
-                << " critically succeeds the save!\n";
+            combatLog(target.name);
+            combatLog(" critically succeeds the save!\n");
 
             return false;
         }
@@ -457,18 +556,16 @@ bool savingThrowAttack(
         {
             damage /= 2;
 
-            std::cout
-                << target.name
-                << " succeeds the save.\n";
+            combatLog(target.name);
+            combatLog(" succeeds the save!\n");
 
             break;
         }
 
         case SaveResult::Failure:
         {
-            std::cout
-                << target.name
-                << " fails the save.\n";
+            combatLog(target.name);
+            combatLog(" fails the save!\n");
 
             break;
         }
@@ -477,24 +574,24 @@ bool savingThrowAttack(
         {
             damage *= 2;
 
-            std::cout
-                << target.name
-                << " critically fails the save!\n";
+            combatLog(target.name);
+            combatLog(" critically fails the save!\n");
 
             break;
         }
     }
+
+    damage += caster.bonusDamage;
 
     applyDamage(
         target,
         damage
     );
 
-    std::cout
-        << target.name
-        << " takes "
-        << damage
-        << " spell damage.\n";
+    combatLog(target.name);
+        combatLog(" takes ");
+        combatLog(damage);
+        combatLog(" spell damage.\n");
 
     return true;
 }
@@ -505,18 +602,22 @@ bool cantripAttack(
     Character& target
 )
 {
+    // Store the original AC of the target to restore it later
+    int targetAc =
+    target.ac;
+
     // If the target has a shield equipped, increase their AC by 2 for this attack
     if(target.shieldEquipped)
     {
-        std::cout
-            << target.name
-            << " has a shield equipped, increasing AC by 2.\n";
+        combatLog(target.name);
+        combatLog(" has a shield equipped, increasing AC by 2.\n");
 
-        target.ac += 2;
+        targetAc += 2;
     }
 
     int d20 =
         rollD20(caster);
+        
 
     if(d20 == 1)
     {
@@ -530,17 +631,26 @@ bool cantripAttack(
         d20 +
         caster.cantripModifier;
 
-    if(caster.bardicInspirationActive == false &&
-    target.bardicInspirationActive)
+
+    combatLog(caster.name);
+    combatLog(" casts a cantrip. Roll ");
+    combatLog(attackRoll);
+    combatLog(" vs AC ");
+    combatLog(targetAc);
+    combatLog("\n");
+
+    // Check for Cutting Words on the defender, which can reduce the attack roll by 1d6
+    if(caster.cuttingWordsActive == false &&
+    target.cuttingWordsActive)
     {
-        std::cout
-            << target.name
-            << " has Bardic Inspiration active, reducing the attack roll by 1d6.\n";
+        combatLog(target.name); 
+        combatLog(" has Cutting Words active, reducing the attack roll by 1d6.\n");
+
         attackRoll -= rollDice(1,6);
     }
 
     if(critical ||
-       attackRoll >= target.ac)
+       attackRoll >= targetAc)
     {
         int dice =
             caster.cantripDiceNumber;
@@ -557,18 +667,28 @@ bool cantripAttack(
             )
             + caster.cantripModifier;
 
+        if(target.cursed)
+        {
+            damage += rollDice(1,6);
+        }
+
+        damage += caster.bonusDamage;
+
         applyDamage(
             target,
             damage
         );
 
-        if(caster.cursed)
-        {
-            damage += rollDice(1,6);
-        }
+        combatLog(target.name);
+        combatLog(" takes ");
+        combatLog(damage);
+        combatLog(" cantrip damage.\n");    
 
         return true;
     }
+
+    combatLog(caster.name);
+    combatLog(" misses with the cantrip.\n");
 
     return false;
 }
@@ -593,27 +713,56 @@ bool cantripSavingThrow(
         )
         + caster.cantripModifier;
 
+    damage += caster.bonusDamage;
+
     switch(result)
     {
         case SaveResult::CriticalSuccess:
+        {
+            combatLog(target.name);
+            combatLog(" critically succeeds the save!\n");
+
             return false;
+        }
 
         case SaveResult::Success:
+        {
             damage /= 2;
+
+            combatLog(target.name);
+            combatLog(" succeeds the save!\n");
+
             break;
+        }
 
         case SaveResult::Failure:
+        {
+            combatLog(target.name);
+            combatLog(" fails the save!\n");
+
             break;
+        }
 
         case SaveResult::CriticalFailure:
+        {
             damage *= 2;
+
+            combatLog(target.name);
+            combatLog(" critically fails the save!\n");
+
             break;
+        }
     }
 
     applyDamage(
         target,
         damage
     );
+
+    combatLog(target.name);
+    combatLog(" takes ");
+    combatLog(damage);
+    combatLog(" cantrip damage.\n");
 
     return true;
 }
@@ -643,13 +792,12 @@ bool heal(
         amount
     );
 
-    std::cout
-        << healer.name
-        << " heals "
-        << target.name
-        << " for "
-        << amount
-        << " HP.\n";
+    combatLog(healer.name);
+    combatLog(" heals ");
+    combatLog(target.name);
+    combatLog(" for ");
+    combatLog(amount);
+    combatLog(" HP.\n");
 
     return true;
 }
@@ -674,23 +822,19 @@ bool useSpecial(
             user.raging = true;
             user.rageRounds = 3;
 
-            user.damageReduction = 50;
-
-            std::cout
-                << user.name
-            << " enters Rage!\n";
+            combatLog(user.name);
+            combatLog(" enters Rage!\n");
 
             break;
         }
 
         case ClassType::Bard:
         {
-            user.bardicInspirationActive = true;
-            user.bardicInspirationRounds = 2;
+            user.cuttingWordsActive = true;
+            user.cuttingWordsRounds = 2;
 
-            std::cout
-                << user.name
-                << " uses Bardic Inspiration.\n";
+            combatLog(user.name);
+            combatLog(" uses Cutting Words.\n");
 
             break;
         }
@@ -698,63 +842,86 @@ bool useSpecial(
         case ClassType::Cleric:
         {
             int damage =
-                rollDice(2,8);
+                rollDice(2,8)
+                + user.magicModifier;
 
             applyDamage(
                 target,
                 damage
             );
 
-            std::cout
-                << user.name
-                << " uses Divine Spark for "
-                << damage
-                << " damage.\n";
+            combatLog(user.name);
+            combatLog(" uses Divine Spark for ");
+            combatLog(damage);
+            combatLog(" damage.\n");
 
             break;
         }
+
         case ClassType::Druid:
         {
+            if(!user.wildShapeActive)
+            {
+                user.originalAc = user.ac;
+                user.originalAttackBonus = user.attackBonus;
+
+                user.originalDamageDiceNumber = user.damageDiceNumber;
+                user.originalDamageDiceSides = user.damageDiceSides;
+                user.originalDamageModifier = user.damageModifier;
+
+                user.originalHasAdvantage = user.hasAdvantage;
+            }
+
             user.wildShapeActive = true;
+            user.wildShapeRounds = 3;
 
-            user.tempHp =
-                rollDice(2,10)
-                + 2;
-
-            user.attackBonus = 4;
-
-            user.damageDiceNumber = 1;
-            user.damageDiceSides = 6;
-            user.damageModifier = 2;
-
-            if(user.wildShapeForm ==
-            WildShapeForm::Wolf)
+            switch(user.wildShapeForm)
             {
-                user.wildShapeForm =
-                    WildShapeForm::Wolf;
+                case WildShapeForm::Wolf:
+                {
+                    user.ac = 13;
 
-                user.tempHp = 13;
+                    user.attackBonus = 4;
 
-                std::cout
-                    << user.name
-                    << " transforms into a Wolf!\n";
+                    user.damageDiceNumber = 1;
+                    user.damageDiceSides = 6;
+                    user.damageModifier = 2;
+
+                    user.tempHp = 13;
+
+                    user.hasAdvantage = false;
+
+                    combatLog(user.name);
+                    combatLog(" transforms into a Wolf!\n");
+                    break;
+                }
+
+                case WildShapeForm::Snake:
+                {
+                    user.ac = 15;
+
+                    user.attackBonus = 5;
+
+                    user.damageDiceNumber = 1;
+                    user.damageDiceSides = 4;
+                    user.damageModifier = 3;
+
+                    user.tempHp = 9;
+
+                    user.hasAdvantage = true;
+
+                    combatLog(user.name);
+                    combatLog(" transforms into a Snake!\n");
+                    break;
+                }
+
+                default:
+                {
+                    combatLog(" No wild shape selected.\n");
+                    return false;
+                }
             }
-            else if(user.wildShapeForm ==
-            WildShapeForm::Snake)
-            {
-                user.wildShapeForm =
-                    WildShapeForm::Snake;
 
-                user.tempHp = 9;
-
-                user.hasAdvantage = true;
-
-                std::cout
-                    << user.name
-                    << " transforms into a Snake!\n";
-            }
-            else 
-                user.wildShapeForm = WildShapeForm::None;
             break;
         }
 
@@ -766,11 +933,14 @@ bool useSpecial(
             );
 
             attack(user,target);
-            attack(user,target);
 
-            std::cout
-                << user.name
-                << " uses Action Surge!\n";
+            if(target.alive)
+            {
+                attack(user,target);
+            }
+
+            combatLog(user.name);
+            combatLog(" uses Action Surge!\n");
 
             break;
         }
@@ -778,18 +948,18 @@ bool useSpecial(
         case ClassType::Monk:
         {
             int damage =
-                rollDice(2,6);
+                rollDice(2,6)
+                + user.damageModifier;
 
             applyDamage(
                 target,
                 damage
             );
 
-            std::cout
-                << user.name
-                << " uses Flurry of Blows for "
-                << damage
-                << " damage!\n";
+            combatLog(user.name);
+            combatLog(" uses Flurry of Blows for ");
+            combatLog(damage);
+            combatLog(" damage.\n");
 
             break;
         }
@@ -801,9 +971,8 @@ bool useSpecial(
                 10
             );
 
-            std::cout
-                << user.name
-                << " uses Lay On Hands.\n";
+            combatLog(user.name);
+            combatLog(" uses Lay on Hands!\n");
 
             break;
         }
@@ -813,9 +982,8 @@ bool useSpecial(
             user.favoredEnemy = true;
             user.favoredEnemyRounds = 3;
 
-            std::cout
-                << user.name
-                << " marks Favored Enemy.\n";
+            combatLog(user.name);
+            combatLog(" marks Favored Enemy!\n");
 
             break;
         }
@@ -827,9 +995,8 @@ bool useSpecial(
             user.sneakAttackReady = true;
             user.sneakAttackRounds = 2;
 
-            std::cout
-                << user.name
-                << " prepares Sneak Attack.\n";
+            combatLog(user.name);
+            combatLog(" prepares Sneak Attack!\n");
 
             break;
         }
@@ -838,23 +1005,21 @@ bool useSpecial(
         {
             user.empoweredSpellRounds = 2;
 
-            user.bonusDamage += 4;
+            user.bonusDamage = 4;
 
-            std::cout
-                << user.name
-                << " empowers the next spell.\n";
+            combatLog(user.name);
+            combatLog(" uses Empowered Spell!\n");
 
             break;
         }
 
         case ClassType::Warlock:
         {
-            user.cursed = true;
-            user.curseRounds = 2;
+            target.cursed = true;
+            target.curseRounds = 2;
 
-            std::cout
-                << user.name
-                << " casts Hex.\n";
+            combatLog(user.name);
+            combatLog(" casts Hex!\n");
 
             break;
         }
@@ -862,11 +1027,13 @@ bool useSpecial(
         case ClassType::Wizard:
         {
             user.magicUses =
-                user.maxMagicUses;
+                std::min(
+                    user.magicUses +2,
+                    user.maxMagicUses
+            );
 
-            std::cout
-                << user.name
-                << " uses Arcane Recovery.\n";
+            combatLog(user.name);
+            combatLog(" uses Arcane Recovery!\n");
 
             break;
         }

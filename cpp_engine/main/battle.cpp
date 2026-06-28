@@ -1,118 +1,163 @@
 #include "battle.h"
-#include "actions.h"
-#include "dice.h"
+
+#include "logger.h"
 #include "turn_manager.h"
 
-#include <iostream>
-
-// Function to print the status of a character
-void printStatus(const Character& character)
+BattleResult battle(
+    Character& player1,
+    Character& player2,
+    bool showLog
+)
 {
-    std::cout
-        << character.name
-        << " HP: "
-        << character.hp
-        << "/"
-        << character.maxHp
-        << "\n";
-}
+    showCombatLog = showLog;
 
-// Function to conduct a battle between two characters
-void battle(Character& character1,
-            Character& character2)
-{
-    // Function to roll initiative for two characters
-    int initiative1 =
-    rollDice(1,20)
-    + character1.dex;
+    const int maxRounds = 10;
+    int round = 1;
 
-    int initiative2 =
-    rollDice(1,20)
-    + character2.dex;
+    combatLog("\n=====================================\n");
+    combatLog(player1.name);
+    combatLog(" vs ");
+    combatLog(player2.name);
+    combatLog("\n");
+    combatLog("=====================================\n");
 
-    // Pointers to track attack order
-    Character* first;
-    Character* second;
-
-    // Determine the order of attack based on initiative rolls
-    if(initiative1 >= initiative2)
+    while(player1.alive &&
+          player2.alive &&
+          round <= maxRounds)
     {
-        first = &character1;
-        second = &character2;
+        combatLog("\n=====================================\n");
+        combatLog("             ROUND ");
+        combatLog(round);
+        combatLog("\n");
+        combatLog("=====================================\n");
+
+        executeTurn(
+            player1,
+            player2
+        );
+
+        if(player2.alive)
+        {
+            executeTurn(
+                player2,
+                player1
+            );
+        }
+
+        combatLog("\n-------------------------------------\n");
+
+        combatLog(player1.name);
+        combatLog(" HP: ");
+        combatLog(player1.hp);
+        combatLog("/");
+        combatLog(player1.maxHp);
+
+        if(player1.tempHp > 0)
+        {
+            combatLog(" (+");
+            combatLog(player1.tempHp);
+            combatLog(" Temp)");
+        }
+
+        combatLog("\n");
+
+        combatLog(player2.name);
+        combatLog(" HP: ");
+        combatLog(player2.hp);
+        combatLog("/");
+        combatLog(player2.maxHp);
+
+        if(player2.tempHp > 0)
+        {
+            combatLog(" (+");
+            combatLog(player2.tempHp);
+            combatLog(" Temp)");
+        }
+
+        combatLog("\n");
+        combatLog("-------------------------------------\n");
+
+        round++;
+    }
+
+    combatLog("\n=====================================\n");
+    combatLog("          BATTLE RESULT\n");
+    combatLog("=====================================\n");
+
+    BattleResult result;
+
+    if(player1.alive &&
+       !player2.alive)
+    {
+        combatLog(player1.name);
+        combatLog(" wins by knockout!\n");
+
+        result = BattleResult::Player1Win;
+    }
+    else if(player2.alive &&
+            !player1.alive)
+    {
+        combatLog(player2.name);
+        combatLog(" wins by knockout!\n");
+
+        result = BattleResult::Player2Win;
+    }
+    else if(player1.hp > player2.hp)
+    {
+        combatLog("Maximum rounds reached.\n");
+        combatLog(player1.name);
+        combatLog(" wins by remaining HP!\n");
+
+        result = BattleResult::Player1Win;
+    }
+    else if(player2.hp > player1.hp)
+    {
+        combatLog("Maximum rounds reached.\n");
+        combatLog(player2.name);
+        combatLog(" wins by remaining HP!\n");
+
+        result = BattleResult::Player2Win;
     }
     else
     {
-        first = &character2;
-        second = &character1;
+        combatLog("Maximum rounds reached.\n");
+        combatLog("Battle ends in a draw.\n");
+
+        result = BattleResult::Draw;
     }
 
-    // Print which character acts first
-    std::cout
-    << "\n"
-    << first->name
-    << " acts first!\n";
+    combatLog("\nFinal HP:\n");
 
-    // Print the initiative rolls for both characters
-    std::cout
-    << character1.name
-    << " initiative: "
-    << initiative1
-    << "\n";
+    combatLog(player1.name);
+    combatLog(": ");
+    combatLog(player1.hp);
+    combatLog("/");
+    combatLog(player1.maxHp);
 
-    std::cout
-    << character2.name
-    << " initiative: "
-    << initiative2
-    << "\n";
-
-    // Start the battle loop
-    std::cout
-        << "\n===== BATTLE START =====\n";
-
-    int round = 1;  
-
-    // Continue the battle until one character is defeated
-    while(first->alive && second->alive)
+    if(player1.tempHp > 0)
     {
-    std::cout
-        << "\nRound "
-        << round
-        << "\n";
-    
-    // Print the status of both characters at the start of the round
-    std::cout
-    << "\n--- Status ---\n";
+        combatLog(" (+");
+        combatLog(player1.tempHp);
+        combatLog(" Temp)");
+    }
 
-    printStatus(*first);
-    printStatus(*second);
-    
-    takeTurn(*first, *second);
+    combatLog("\n");
 
-    if(!second->alive)
+    combatLog(player2.name);
+    combatLog(": ");
+    combatLog(player2.hp);
+    combatLog("/");
+    combatLog(player2.maxHp);
+
+    if(player2.tempHp > 0)
     {
-        break;
+        combatLog(" (+");
+        combatLog(player2.tempHp);
+        combatLog(" Temp)");
     }
 
-    takeTurn(*second, *first);
+    combatLog("\n");
+    combatLog("=====================================\n");
 
-    round++;
-    }
-
-    // Print the result of the battle
-    std::cout
-        << "\n===== BATTLE OVER =====\n";
-
-    if(first->alive)
-    {
-    std::cout
-        << first->name
-        << " wins!\n";
-    }
-    else
-    {
-    std::cout
-        << second->name
-        << " wins!\n";
-    }
+    return result;
 }
-
