@@ -2,23 +2,26 @@
 #define TURN_MANAGER_H
 
 #include "character.h"
+#include "combat_statistics.h"
 
-// Ejecuta un turno completo
+//==========================================
+// Executes one complete turn.
+//==========================================
+
 void executeTurn(
-    Character& current,
-    Character& enemy
+    Character& attacker,
+    Character& defender,
+    CombatStatistics& attackerStats,
+    CombatStatistics& defenderStats
 );
 
-// Decide la acción que realizará el personaje
-void chooseAction(
-    Character& current,
-    Character& enemy
-);
+//==========================================
+// Checks if the combat should continue.
+//==========================================
 
-// Ejecuta la acción elegida
-bool performAction(
-    Character& current,
-    Character& enemy
+bool battleContinues(
+    const Character& characterA,
+    const Character& characterB
 );
 
 #endif

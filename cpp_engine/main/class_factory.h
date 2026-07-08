@@ -3,20 +3,65 @@
 
 #include "character.h"
 
-// Function declarations for creating characters of different classes
-Character createBarbarian();
-Character createBard();
-Character createCleric();
-Character createDruid();
-Character createFighter();
-Character createMonk();
-Character createPaladin();
-Character createRanger();
-Character createRogue();
-Character createSorcerer();
-Character createWarlock();
-Character createWizard();
+//==================================================
+// Character Factory
+//==================================================
 
-Character createCharacter(ClassType classType);
+Character createBarbarian(
+    const std::string& name
+);
+
+Character createBard(
+    const std::string& name
+);
+
+Character createCleric(
+    const std::string& name
+);
+
+Character createDruid(
+    const std::string& name
+);
+
+Character createFighter(
+    const std::string& name
+);
+
+Character createMonk(
+    const std::string& name
+);
+
+Character createPaladin(
+    const std::string& name
+);
+
+Character createRanger(
+    const std::string& name
+);
+
+Character createRogue(
+    const std::string& name
+);
+
+Character createSorcerer(
+    const std::string& name
+);
+
+Character createWarlock(
+    const std::string& name
+);
+
+Character createWizard(
+    const std::string& name
+);
+
+//==================================================
+// Generic Factory
+//==================================================
+
+Character createCharacter(
+    ClassType classType,
+    const std::string& name
+);
 
 #endif

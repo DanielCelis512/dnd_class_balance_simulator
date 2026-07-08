@@ -6,158 +6,191 @@
 BattleResult battle(
     Character& player1,
     Character& player2,
+    CombatStatistics& player1Stats,
+    CombatStatistics& player2Stats,
     bool showLog
 )
 {
+    player1Stats = CombatStatistics{};
+    player2Stats = CombatStatistics{};
+
     showCombatLog = showLog;
 
-    const int maxRounds = 10;
+    constexpr int MAX_ROUNDS = 10;
+
     int round = 1;
 
     combatLog("\n=====================================\n");
-    combatLog(player1.name);
+    combatLog(player1.identity.name);
     combatLog(" vs ");
-    combatLog(player2.name);
-    combatLog("\n");
-    combatLog("=====================================\n");
+    combatLog(player2.identity.name);
+    combatLog("\n=====================================\n");
 
-    while(player1.alive &&
-          player2.alive &&
-          round <= maxRounds)
+    while(
+        battleContinues(player1, player2) &&
+        round <= MAX_ROUNDS
+    )
     {
         combatLog("\n=====================================\n");
-        combatLog("             ROUND ");
+        combatLog("ROUND ");
         combatLog(round);
-        combatLog("\n");
-        combatLog("=====================================\n");
+        combatLog("\n=====================================\n");
 
         executeTurn(
             player1,
-            player2
+            player2,
+            player1Stats,   
+            player2Stats
         );
 
-        if(player2.alive)
+        if(player2.health.alive)
         {
             executeTurn(
                 player2,
-                player1
+                player1,
+                player2Stats,
+                player1Stats
             );
         }
 
-        combatLog("\n-------------------------------------\n");
-
-        combatLog(player1.name);
+        combatLog("\n");
+        combatLog(player1.identity.name);
         combatLog(" HP: ");
-        combatLog(player1.hp);
+        combatLog(player1.health.hp);
         combatLog("/");
-        combatLog(player1.maxHp);
+        combatLog(player1.health.maxHp);
 
-        if(player1.tempHp > 0)
+        if(player1.health.tempHp > 0)
         {
             combatLog(" (+");
-            combatLog(player1.tempHp);
-            combatLog(" Temp)");
+            combatLog(player1.health.tempHp);
+            combatLog(")");
         }
 
         combatLog("\n");
 
-        combatLog(player2.name);
+        combatLog(player2.identity.name);
         combatLog(" HP: ");
-        combatLog(player2.hp);
+        combatLog(player2.health.hp);
         combatLog("/");
-        combatLog(player2.maxHp);
+        combatLog(player2.health.maxHp);
 
-        if(player2.tempHp > 0)
+        if(player2.health.tempHp > 0)
         {
             combatLog(" (+");
-            combatLog(player2.tempHp);
-            combatLog(" Temp)");
+            combatLog(player2.health.tempHp);
+            combatLog(")");
         }
 
         combatLog("\n");
-        combatLog("-------------------------------------\n");
 
         round++;
     }
 
-    combatLog("\n=====================================\n");
-    combatLog("          BATTLE RESULT\n");
-    combatLog("=====================================\n");
-
     BattleResult result;
 
-    if(player1.alive &&
-       !player2.alive)
+    if(player1.health.alive && !player2.health.alive)
     {
-        combatLog(player1.name);
-        combatLog(" wins by knockout!\n");
-
         result = BattleResult::Player1Win;
-    }
-    else if(player2.alive &&
-            !player1.alive)
-    {
-        combatLog(player2.name);
-        combatLog(" wins by knockout!\n");
 
+        registerVictory(
+            player1Stats,
+            player2Stats
+        );
+
+        combatLog("\n");
+        combatLog(player1.identity.name);
+        combatLog(" wins!\n");
+    }
+    else if(player2.health.alive && !player1.health.alive)
+    {
         result = BattleResult::Player2Win;
-    }
-    else if(player1.hp > player2.hp)
-    {
-        combatLog("Maximum rounds reached.\n");
-        combatLog(player1.name);
-        combatLog(" wins by remaining HP!\n");
 
-        result = BattleResult::Player1Win;
-    }
-    else if(player2.hp > player1.hp)
-    {
-        combatLog("Maximum rounds reached.\n");
-        combatLog(player2.name);
-        combatLog(" wins by remaining HP!\n");
+        registerVictory(
+            player2Stats,
+            player1Stats
+        );
 
-        result = BattleResult::Player2Win;
+        combatLog("\n");
+        combatLog(player2.identity.name);
+        combatLog(" wins!\n");
     }
     else
     {
-        combatLog("Maximum rounds reached.\n");
-        combatLog("Battle ends in a draw.\n");
+        if(player1.health.hp > player2.health.hp)
+        {
+            result = BattleResult::Player1Win;
 
-        result = BattleResult::Draw;
+            registerVictory(
+                player1Stats,
+                player2Stats
+            );
+
+            combatLog("\nMaximum rounds reached.\n");
+            combatLog(player1.identity.name);
+            combatLog(" wins by remaining HP.\n");
+        }
+        else if(player2.health.hp > player1.health.hp)
+        {
+            result = BattleResult::Player2Win;
+
+            registerVictory(
+                player2Stats,
+                player1Stats
+            );
+
+            combatLog("\nMaximum rounds reached.\n");
+            combatLog(player2.identity.name);
+            combatLog(" wins by remaining HP.\n");
+        }
+        else
+        {
+            result = BattleResult::Draw;
+
+            combatLog("\nMaximum rounds reached.\n");
+            combatLog("Draw.\n");
+        }
     }
 
-    combatLog("\nFinal HP:\n");
+    player1Stats.roundsSurvived = round - 1;
+    player2Stats.roundsSurvived = round - 1;
 
-    combatLog(player1.name);
-    combatLog(": ");
-    combatLog(player1.hp);
-    combatLog("/");
-    combatLog(player1.maxHp);
+    calculateFinalStatistics(player1Stats);
+    calculateFinalStatistics(player2Stats);
 
-    if(player1.tempHp > 0)
-    {
-        combatLog(" (+");
-        combatLog(player1.tempHp);
-        combatLog(" Temp)");
-    }
-
-    combatLog("\n");
-
-    combatLog(player2.name);
-    combatLog(": ");
-    combatLog(player2.hp);
-    combatLog("/");
-    combatLog(player2.maxHp);
-
-    if(player2.tempHp > 0)
-    {
-        combatLog(" (+");
-        combatLog(player2.tempHp);
-        combatLog(" Temp)");
-    }
-
-    combatLog("\n");
+    combatLog("\n=====================================\n");
+    combatLog("FINAL HP\n");
     combatLog("=====================================\n");
+
+    combatLog(player1.identity.name);
+    combatLog(": ");
+    combatLog(player1.health.hp);
+    combatLog("/");
+    combatLog(player1.health.maxHp);
+
+    if(player1.health.tempHp > 0)
+    {
+        combatLog(" (+");
+        combatLog(player1.health.tempHp);
+        combatLog(")");
+    }
+
+    combatLog("\n");
+
+    combatLog(player2.identity.name);
+    combatLog(": ");
+    combatLog(player2.health.hp);
+    combatLog("/");
+    combatLog(player2.health.maxHp);
+
+    if(player2.health.tempHp > 0)
+    {
+        combatLog(" (+");
+        combatLog(player2.health.tempHp);
+        combatLog(")");
+    }
+
+    combatLog("\n=====================================\n");
 
     return result;
 }
